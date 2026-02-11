@@ -6,8 +6,6 @@ export interface ImageAsset {
   preview_url: string;
   status: KanbanStatus;
   tags: string[];
-  assigned_to?: string | null;
-  created_at?: string;
 }
 
 export interface LeaderboardEntry {

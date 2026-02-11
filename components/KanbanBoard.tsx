@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ImageAsset, KanbanStatus } from '@/lib/types';
 import { ImageCard } from './ImageCard';
 
@@ -11,25 +11,12 @@ const columns: { key: KanbanStatus; label: string }[] = [
   { key: 'approved', label: 'Approved' }
 ];
 
-const demoData: ImageAsset[] = [
-  {
-    id: '1',
-    dropbox_path: '/incoming/cat-1.jpg',
-    preview_url: 'https://picsum.photos/400/300?1',
-    status: 'to_tag',
-    tags: ['cat', 'indoor']
-  },
-  {
-    id: '2',
-    dropbox_path: '/incoming/bird-2.jpg',
-    preview_url: 'https://picsum.photos/400/300?2',
-    status: 'tagged',
-    tags: ['bird']
-  }
-];
-
 export function KanbanBoard() {
-  const [items, setItems] = useState<ImageAsset[]>(demoData);
+  const [items, setItems] = useState<ImageAsset[]>([]);
+
+  useEffect(() => {
+    fetch('/api/assets').then((r) => r.json()).then((j) => setItems(j.items || []));
+  }, []);
 
   const grouped = useMemo(
     () =>
@@ -42,7 +29,6 @@ export function KanbanBoard() {
 
   const addTagLocalFirst = (id: string, tag: string) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, tags: [...item.tags, tag] } : item)));
-    // TODO: sync with Supabase image_tags table + optional Dropbox metadata writeback.
   };
 
   return (
@@ -51,10 +37,10 @@ export function KanbanBoard() {
         <section key={column.key} className="rounded-xl border border-border bg-white p-3">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">{column.label}</h2>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{grouped[column.key].length}</span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{grouped[column.key]?.length || 0}</span>
           </div>
           <div className="space-y-3">
-            {grouped[column.key].map((item) => (
+            {(grouped[column.key] || []).map((item) => (
               <ImageCard key={item.id} item={item} onAddTag={addTagLocalFirst} />
             ))}
           </div>

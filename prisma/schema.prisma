@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KanbanStatus {
+  to_tag
+  tagged
+  in_review
+  approved
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("tagger")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  imageTags     ImageTag[] @relation("TagCreator")
+  tagEvents     TagEvent[] @relation("TagActor")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ImageAsset {
+  id          String       @id @default(cuid())
+  dropboxPath String       @unique
+  previewUrl  String?
+  status      KanbanStatus @default(to_tag)
+  assignedTo  String?
+  ingestedAt  DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tags        ImageTag[]
+  events      TagEvent[]
+}
+
+model ImageTag {
+  id        Int      @id @default(autoincrement())
+  imageId   String
+  tag       String
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  image     ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  creator   User?      @relation("TagCreator", fields: [createdBy], references: [id])
+}
+
+model TagEvent {
+  id        Int      @id @default(autoincrement())
+  imageId   String
+  eventType String
+  payload   Json
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  image     ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  actor     User?      @relation("TagActor", fields: [actorId], references: [id])
+}

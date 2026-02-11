@@ -1,29 +1,14 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
 import { KanbanBoard } from '@/components/KanbanBoard';
 import { Leaderboard } from '@/components/Leaderboard';
+import { SignOutButton } from '@/components/SignOutButton';
 
-export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+export default async function DashboardPage() {
+  const session = await auth();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.replace('/auth/login');
-        return;
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
-    return <main className="p-6 text-sm text-slate-500">Loading dashboard...</main>;
+  if (!session?.user?.id) {
+    redirect('/auth/login');
   }
 
   return (
@@ -31,17 +16,9 @@ export default function DashboardPage() {
       <header className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Tagging Dashboard</h1>
-          <p className="text-sm text-slate-600">Protected workspace with local-first tagging interactions.</p>
+          <p className="text-sm text-slate-600">Protected PostgreSQL-backed tagging workspace.</p>
         </div>
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            router.push('/auth/login');
-          }}
-          className="rounded-lg border border-border px-3 py-2 text-sm"
-        >
-          Sign out
-        </button>
+        <SignOutButton />
       </header>
 
       <div className="mb-6">
