@@ -45,13 +45,14 @@ model Session {
 }
 
 model ImageAsset {
-  id          String       @id @default(cuid())
-  dropboxPath String       @unique @map("dropbox_path")
-  previewUrl  String       @map("preview_url")
-  status      KanbanStatus @default(to_tag)
-  assignedTo  String?      @map("assigned_to")
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id                 String       @id @default(cuid())
+  dropboxPath        String       @unique @map("dropbox_path")
+  previewUrl         String       @map("preview_url")
+  previewRefreshedAt DateTime?    @map("preview_refreshed_at")
+  status             KanbanStatus @default(to_tag)
+  assignedTo         String?      @map("assigned_to")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
   assignee  User?      @relation("AssignedUserAssets", fields: [assignedTo], references: [id], onDelete: SetNull)
   imageTags ImageTag[]

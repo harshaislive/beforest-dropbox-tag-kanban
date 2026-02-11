@@ -14,6 +14,9 @@ const columns: { key: KanbanStatus; label: string }[] = [
 export function KanbanBoard() {
   const [items, setItems] = useState<ImageAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busyAction, setBusyAction] = useState<'sync' | 'refresh' | null>(null);
+  const [message, setMessage] = useState<string>('');
+  const [imageFit, setImageFit] = useState<'cover' | 'contain'>('contain');
 
   const fetchBoard = async () => {
     setLoading(true);
@@ -68,25 +71,109 @@ export function KanbanBoard() {
     }
   };
 
+  const syncDropbox = async () => {
+    setBusyAction('sync');
+    setMessage('');
+
+    try {
+      const res = await fetch('/api/dropbox/ingest', { method: 'POST' });
+      const json = (await res.json()) as {
+        ok: boolean;
+        message?: string;
+        counts?: { scanned: number; new: number; updated: number; skipped: number; errors: number };
+      };
+
+      if (!res.ok || !json.ok || !json.counts) {
+        setMessage(`Sync failed: ${json.message ?? 'unknown error'}`);
+        return;
+      }
+
+      const c = json.counts;
+      setMessage(`Sync complete — scanned:${c.scanned} new:${c.new} updated:${c.updated} skipped:${c.skipped} errors:${c.errors}`);
+      await fetchBoard();
+    } catch {
+      setMessage('Sync failed due to network/server error');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const refreshLinks = async () => {
+    setBusyAction('refresh');
+    setMessage('');
+
+    try {
+      const res = await fetch('/api/dropbox/refresh-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 100 })
+      });
+      const json = (await res.json()) as {
+        ok: boolean;
+        message?: string;
+        counts?: { considered: number; refreshed: number; errors: number };
+      };
+
+      if (!res.ok || !json.ok || !json.counts) {
+        setMessage(`Refresh failed: ${json.message ?? 'unknown error'}`);
+        return;
+      }
+
+      const c = json.counts;
+      setMessage(`Links refreshed — considered:${c.considered} refreshed:${c.refreshed} errors:${c.errors}`);
+      await fetchBoard();
+    } catch {
+      setMessage('Refresh failed due to network/server error');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   if (loading) {
     return <p className="text-sm text-slate-500">Loading board...</p>;
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {columns.map((column) => (
-        <section key={column.key} className="rounded-xl border border-border bg-white p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">{column.label}</h2>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{grouped[column.key].length}</span>
-          </div>
-          <div className="space-y-3">
-            {grouped[column.key].map((item) => (
-              <ImageCard key={item.id} item={item} onAddTag={addTag} onChangeStatus={changeStatus} />
-            ))}
-          </div>
-        </section>
-      ))}
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+          onClick={syncDropbox}
+          disabled={busyAction !== null}
+        >
+          {busyAction === 'sync' ? 'Syncing…' : 'Sync Dropbox'}
+        </button>
+        <button
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 disabled:opacity-60"
+          onClick={refreshLinks}
+          disabled={busyAction !== null}
+        >
+          {busyAction === 'refresh' ? 'Refreshing…' : 'Refresh Links'}
+        </button>
+        <button
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800"
+          onClick={() => setImageFit((prev) => (prev === 'contain' ? 'cover' : 'contain'))}
+        >
+          Fit: {imageFit}
+        </button>
+        {message && <p className="text-xs text-slate-600">{message}</p>}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {columns.map((column) => (
+          <section key={column.key} className="rounded-xl border border-border bg-white p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">{column.label}</h2>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{grouped[column.key].length}</span>
+            </div>
+            <div className="space-y-3">
+              {grouped[column.key].map((item) => (
+                <ImageCard key={item.id} item={item} imageFit={imageFit} onAddTag={addTag} onChangeStatus={changeStatus} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

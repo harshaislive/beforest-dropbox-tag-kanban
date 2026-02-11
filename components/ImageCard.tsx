@@ -1,10 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import { ImageAsset, KanbanStatus } from '@/lib/types';
 
 interface Props {
   item: ImageAsset;
+  imageFit?: 'cover' | 'contain';
   onAddTag?: (id: string, tag: string) => void;
   onChangeStatus?: (id: string, status: KanbanStatus) => void;
 }
@@ -16,11 +18,24 @@ const statusOptions: { value: KanbanStatus; label: string }[] = [
   { value: 'approved', label: 'Approved' }
 ];
 
-export function ImageCard({ item, onAddTag, onChangeStatus }: Props) {
+export function ImageCard({ item, imageFit = 'contain', onAddTag, onChangeStatus }: Props) {
+  const [imageError, setImageError] = useState(false);
+  const hasPreview = !!item.preview_url && !imageError;
+
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
-      <div className="relative mb-3 h-36 w-full overflow-hidden rounded-lg bg-slate-100">
-        <Image src={item.preview_url} alt={item.dropbox_path} fill className="object-cover" />
+      <div className="relative mb-3 h-52 w-full overflow-hidden rounded-lg bg-slate-100">
+        {hasPreview ? (
+          <Image
+            src={item.preview_url}
+            alt={item.dropbox_path}
+            fill
+            className={imageFit === 'contain' ? 'object-contain' : 'object-cover'}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-slate-500">Preview unavailable</div>
+        )}
       </div>
       <p className="mb-2 truncate text-xs text-slate-500">{item.dropbox_path}</p>
       <div className="mb-2 flex flex-wrap gap-2">
@@ -29,6 +44,13 @@ export function ImageCard({ item, onAddTag, onChangeStatus }: Props) {
             #{tag}
           </span>
         ))}
+      </div>
+      <div className="mb-2">
+        {item.preview_url && (
+          <a href={item.preview_url} target="_blank" rel="noreferrer" className="text-xs font-medium text-slate-700 underline">
+            Open full image
+          </a>
+        )}
       </div>
       <div className="flex items-center justify-between gap-2">
         {onAddTag && (
