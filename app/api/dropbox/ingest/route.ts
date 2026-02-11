@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getDropboxConfigFromEnv, getDropboxTemporaryLink, listDropboxImageFiles, refreshDropboxAccessToken } from '@/lib/dropbox';
 
 const LINK_REFRESH_AFTER_MS = 1000 * 60 * 60 * 3;
+const INGEST_BATCH_SIZE = 500;
 
 type IngestCounts = {
   scanned: number;
@@ -36,8 +37,10 @@ export async function POST() {
     );
   }
 
+  const toProcess = dropboxPaths.slice(0, INGEST_BATCH_SIZE);
+
   const counts: IngestCounts = {
-    scanned: dropboxPaths.length,
+    scanned: toProcess.length,
     new: 0,
     updated: 0,
     skipped: 0,
@@ -45,14 +48,14 @@ export async function POST() {
   };
 
   const existingAssets = await prisma.imageAsset.findMany({
-    where: { dropboxPath: { in: dropboxPaths } },
+    where: { dropboxPath: { in: toProcess } },
     select: { id: true, dropboxPath: true, previewUrl: true, previewRefreshedAt: true }
   });
   const existingByPath = new Map(existingAssets.map((asset) => [asset.dropboxPath, asset]));
 
   const now = new Date();
 
-  for (const path of dropboxPaths) {
+  for (const path of toProcess) {
     const existing = existingByPath.get(path);
     const isNew = !existing;
     const linkStale =
@@ -92,5 +95,14 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({ ok: true, counts });
+  return NextResponse.json({
+    ok: true,
+    counts,
+    batch: {
+      size: INGEST_BATCH_SIZE,
+      processed: toProcess.length,
+      remaining: Math.max(0, dropboxPaths.length - toProcess.length),
+      totalFound: dropboxPaths.length
+    }
+  });
 }

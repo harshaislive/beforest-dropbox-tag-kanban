@@ -10,6 +10,7 @@ export async function GET() {
 
   const assets = await prisma.imageAsset.findMany({
     orderBy: { createdAt: 'desc' },
+    take: 500,
     include: {
       imageTags: {
         orderBy: { createdAt: 'asc' },
