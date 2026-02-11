@@ -11,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: 'database'
+    strategy: 'jwt'
   },
   providers: [
     Credentials({
@@ -42,9 +42,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    session: async ({ session, user }) => {
-      if (session.user) {
-        session.user.id = user.id;
+    jwt: async ({ token, user }) => {
+      if (user) token.id = user.id;
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (session.user && token?.id) {
+        session.user.id = token.id as string;
       }
       return session;
     }
