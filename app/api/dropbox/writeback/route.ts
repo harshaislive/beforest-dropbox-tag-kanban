@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
  * Expected future behavior:
  * 1) Receive tagged image metadata payload.
  * 2) Write tags/status back to Dropbox metadata or sidecar JSON.
- * 3) Store sync timestamp in Supabase.
+ * 3) Store sync timestamp in PostgreSQL.
  */
 export async function POST() {
   return NextResponse.json(

@@ -24,20 +24,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.imageAsset.update({
-      where: { id: params.id },
-      data: { status: nextStatus }
-    });
+    await tx.imageAsset.update({ where: { id: params.id }, data: { status: nextStatus } });
 
     await tx.tagEvent.create({
       data: {
-        imageId: params.id,
-        actorId: session.user.id,
-        eventType: 'move_status',
-        payload: {
-          from_status: asset.status,
-          to_status: nextStatus
-        }
+        imageAssetId: params.id,
+        userId: session.user.id,
+        eventType: 'status_changed',
+        fromStatus: asset.status,
+        toStatus: nextStatus
       }
     });
   });

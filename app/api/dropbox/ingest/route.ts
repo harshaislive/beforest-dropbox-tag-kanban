@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
  * Placeholder endpoint.
  * Expected future behavior:
  * 1) Pull image list from configured Dropbox folder.
- * 2) Upsert into Supabase image_assets.
+ * 2) Upsert into PostgreSQL image_assets via Prisma.
  * 3) Return ingest summary.
  */
 export async function POST() {

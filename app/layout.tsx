@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Dropbox Tag Kanban MVP',
-  description: 'Minimal Kanban image tagging app with Supabase auth'
+  description: 'Minimal Kanban image tagging app with PostgreSQL auth'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

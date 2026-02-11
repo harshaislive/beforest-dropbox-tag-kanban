@@ -15,44 +15,104 @@ enum KanbanStatus {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  passwordHash  String
-  role          String    @default("tagger")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  imageTags     ImageTag[] @relation("TagCreator")
-  tagEvents     TagEvent[] @relation("TagActor")
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String       @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  sessions    Session[]
+  imageAssets ImageAsset[] @relation("AssignedUserAssets")
+  imageTags   ImageTag[]
+  tagEvents   TagEvent[]
+  accounts    Account[]
+
+  @@map("users")
 }
 
 model Session {
   id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model ImageAsset {
+  id          String       @id @default(cuid())
+  dropboxPath String       @unique @map("dropbox_path")
+  previewUrl  String       @map("preview_url")
+  status      KanbanStatus @default(to_tag)
+  assignedTo  String?      @map("assigned_to")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  assignee  User?      @relation("AssignedUserAssets", fields: [assignedTo], references: [id], onDelete: SetNull)
+  imageTags ImageTag[]
+  tagEvents TagEvent[]
+
+  @@index([status])
+  @@index([assignedTo])
+  @@map("image_assets")
+}
+
+model ImageTag {
+  id           String   @id @default(cuid())
+  imageAssetId String   @map("image_asset_id")
+  tag          String
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  imageAsset ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+  creator    User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([imageAssetId, tag])
+  @@index([createdBy])
+  @@map("image_tags")
+}
+
+model TagEvent {
+  id           String       @id @default(cuid())
+  imageAssetId String       @map("image_asset_id")
+  userId       String       @map("user_id")
+  eventType    String       @map("event_type")
+  fromStatus   KanbanStatus? @map("from_status")
+  toStatus     KanbanStatus? @map("to_status")
+  tag          String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  imageAsset ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([imageAssetId, createdAt])
+  @@index([userId, createdAt])
+  @@map("tag_events")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model VerificationToken {
@@ -61,40 +121,5 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-}
-
-model ImageAsset {
-  id          String       @id @default(cuid())
-  dropboxPath String       @unique
-  previewUrl  String?
-  status      KanbanStatus @default(to_tag)
-  assignedTo  String?
-  ingestedAt  DateTime     @default(now())
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  tags        ImageTag[]
-  events      TagEvent[]
-}
-
-model ImageTag {
-  id        Int      @id @default(autoincrement())
-  imageId   String
-  tag       String
-  createdBy String?
-  createdAt DateTime @default(now())
-
-  image     ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  creator   User?      @relation("TagCreator", fields: [createdBy], references: [id])
-}
-
-model TagEvent {
-  id        Int      @id @default(autoincrement())
-  imageId   String
-  eventType String
-  payload   Json
-  actorId   String?
-  createdAt DateTime @default(now())
-
-  image     ImageAsset @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  actor     User?      @relation("TagActor", fields: [actorId], references: [id])
+  @@map("verification_tokens")
 }
