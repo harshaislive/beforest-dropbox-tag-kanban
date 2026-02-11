@@ -23,8 +23,8 @@ export function ImageCard({ item, imageFit = 'contain', onAddTag, onChangeStatus
   const hasPreview = !!item.preview_url && !imageError;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
-      <div className="relative mb-3 h-52 w-full overflow-hidden rounded-lg bg-slate-100">
+    <div className="rounded-lg border border-black/10 bg-white p-2.5 shadow-[0_1px_0_rgba(15,23,42,0.03)] transition hover:border-black/20 hover:bg-[#fafaf9]">
+      <div className="relative mb-2 h-48 w-full overflow-hidden rounded-md border border-black/5 bg-[#f3f3f1]">
         {hasPreview ? (
           <Image
             src={item.preview_url}
@@ -34,20 +34,22 @@ export function ImageCard({ item, imageFit = 'contain', onAddTag, onChangeStatus
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-slate-500">Preview unavailable</div>
+          <div className="flex h-full items-center justify-center text-xs text-[#7a7a7a]">Preview unavailable</div>
         )}
       </div>
-      <p className="mb-2 truncate text-xs text-slate-500">{item.dropbox_path}</p>
-      <div className="mb-2 flex flex-wrap gap-2">
+      <p className="mb-2 truncate text-[11px] text-[#7a7a7a]" title={item.dropbox_path}>
+        {item.dropbox_path}
+      </p>
+      <div className="mb-2 flex min-h-6 flex-wrap gap-1.5">
         {item.tags.map((tag) => (
-          <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
+          <span key={tag} className="rounded-md border border-black/10 bg-[#f7f7f5] px-1.5 py-0.5 text-[11px] text-[#525252]">
             #{tag}
           </span>
         ))}
       </div>
       <div className="mb-2">
         {item.preview_url && (
-          <a href={item.preview_url} target="_blank" rel="noreferrer" className="text-xs font-medium text-slate-700 underline">
+          <a href={item.preview_url} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-[#3f3f3f] underline">
             Open full image
           </a>
         )}
@@ -55,7 +57,7 @@ export function ImageCard({ item, imageFit = 'contain', onAddTag, onChangeStatus
       <div className="flex items-center justify-between gap-2">
         {onAddTag && (
           <button
-            className="text-xs font-medium text-slate-700 underline"
+            className="rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] font-medium text-[#3f3f3f] transition hover:bg-[#f3f3f1]"
             onClick={() => {
               const tag = window.prompt('Add tag');
               if (tag) onAddTag(item.id, tag);
@@ -66,7 +68,7 @@ export function ImageCard({ item, imageFit = 'contain', onAddTag, onChangeStatus
         )}
         {onChangeStatus && (
           <select
-            className="rounded border border-border bg-white px-2 py-1 text-xs"
+            className="rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] text-[#3f3f3f]"
             value={item.status}
             onChange={(e) => onChangeStatus(item.id, e.target.value as KanbanStatus)}
           >
