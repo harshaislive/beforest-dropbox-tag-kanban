@@ -18,15 +18,16 @@ export async function POST(req: Request) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.imageTag.upsert({
-        where: { imageAssetId_tag: { imageAssetId, tag } },
-        update: {},
-        create: {
-          imageAssetId,
-          tag,
-          createdBy: session.user.id
-        }
-      });
+      const exists = await tx.imageTag.findFirst({ where: { imageAssetId, tag } });
+      if (!exists) {
+        await tx.imageTag.create({
+          data: {
+            imageAssetId,
+            tag,
+            createdBy: session.user!.id
+          }
+        });
+      }
 
       const asset = await tx.imageAsset.findUnique({ where: { id: imageAssetId } });
       if (!asset) throw new Error('Asset not found');
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
 
       await tx.tagEvent.create({
         data: {
+          userId: session.user!.id,
           imageAssetId,
-          userId: session.user.id,
           eventType: 'tag_added',
           tag,
           fromStatus: asset.status,

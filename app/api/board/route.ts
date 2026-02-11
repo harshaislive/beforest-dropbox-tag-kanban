@@ -18,16 +18,15 @@ export async function GET() {
     }
   });
 
-  return NextResponse.json({
-    ok: true,
-    data: assets.map((asset) => ({
-      id: asset.id,
-      dropbox_path: asset.dropboxPath,
-      preview_url: asset.previewUrl,
-      status: asset.status,
-      assigned_to: asset.assignedTo,
-      created_at: asset.createdAt.toISOString(),
-      tags: asset.imageTags.map((t) => t.tag)
-    }))
-  });
+  const data = assets.map((asset) => ({
+    id: asset.id,
+    dropbox_path: asset.dropboxPath,
+    preview_url: asset.previewUrl || `https://picsum.photos/400/300?seed=${asset.id}`,
+    status: asset.status,
+    assigned_to: asset.assignedTo,
+    created_at: asset.createdAt.toISOString(),
+    tags: asset.imageTags.map((t) => t.tag)
+  }));
+
+  return NextResponse.json({ ok: true, data });
 }
